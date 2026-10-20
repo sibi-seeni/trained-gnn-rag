@@ -1,0 +1,6 @@
+data/processed/
+cache/
+*.pt
+*.npy
+.env
+.DS_Store
