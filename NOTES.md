@@ -1,0 +1,1 @@
+Llama 3.2 3B not available on NaviGator (checked Oct 20, 2026); main reader = granite-3.3-8b-instruct, strong-reader check = llama-3.3-70b-instruct.

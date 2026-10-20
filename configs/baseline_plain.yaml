@@ -1,0 +1,13 @@
+name: plain_search
+seed: 42
+data: {n_train: 2000, n_val: 500, out_dir: data/processed}
+embed: {model: sentence-transformers/all-MiniLM-L6-v2, batch_size: 128, cache_dir: cache/emb}
+retrieval: {method: dense, k: 4, ks: [2, 4, 10]}
+generate:
+  base_url: https://api.ai.it.ufl.edu/v1
+  key_file: ~/.secrets/navigator_key
+  model: granite-3.3-8b-instruct
+  temperature: 0
+  max_tokens: 64
+  cache_file: cache/llm.jsonl
+eval: {n_questions: 100, split: val}
