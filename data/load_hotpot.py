@@ -18,3 +18,7 @@ def run(cfg):
         name = "val" if split == "validation" else "train"
         with open(f'{cfg["data"]["out_dir"]}/{name}.jsonl', "w") as f:
             for r in out: f.write(json.dumps(r) + "\n")
+
+if __name__ == "__main__":
+    import sys, yaml
+    run(yaml.safe_load(open(sys.argv[1])))
