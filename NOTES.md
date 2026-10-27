@@ -21,14 +21,17 @@
 ## Baseline: plain dense search (MiniLM, k = 4)
 Command: `python run_pipeline.py configs/baseline_plain.yaml`
 
-| n_q | EM | F1 | recall@2 | recall@4 | recall@10 | both_gold@2 | both_gold@4 | MRR | latency (s, first run) |
-|-----|----|----|----------|----------|-----------|-------------|-------------|-----|------------------------|
-| 100 |    |    |          |          |           |             |             |     |                        |
+| n_q | EM | F1 | recall@2 | recall@4 | recall@10 | both_gold@2 | both_gold@4 | both_gold@10 | MRR | latency (ms, first run) |
+|-----|----|----|----------|----------|-----------|-------------|-------------|--------------|-----|-------------------------|
+| 100 |  0.43  |  0.590  |     0.615     |     0.775     |     1.0      |       0.31      |       0.56      |       1.0      |  0.897   |           276.615             |
 | 500 |    |    |          |          |           |             |             |     |                        |
 
 Sanity checks:
-- Raw reader outputs short? (look at cache/llm.jsonl):
+- Raw reader outputs short? (look at cache/llm.jsonl): Yes, 1-3 words.
 - 3 example failures (question, gold answer, prediction, were both golds retrieved?):
+{"k": "a30db64031ff384568bcd5a71cc8c244ba914d7f", "v": "Yes"}
+{"k": "77ef737ba7514e72158db04c4a5c1e19bb0ad730", "v": "Rodr\u00edguez v. Popular Democratic Party"}
+{"k": "2f558063eee1374214ee1c9379763390d868f660", "v": "1970s"}
 
 ## Graph stats (val, 500 graphs)
 Command: `python -m graph.run_graphs configs/baseline_plain.yaml [--sim 0.5]`
