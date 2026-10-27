@@ -14,11 +14,12 @@ exs = [json.loads(l) for l in open(f'{cfg["data"]["out_dir"]}/val.jsonl')][:cfg[
 E = cfg["embed"]
 qv = encode_cached([e["question"] for e in exs], E["model"], E["cache_dir"], "q_val")
 pv = encode_cached([p["title"]+". "+p["text"] for e in exs for p in e["passages"]], E["model"], E["cache_dir"], "p_val")
+offs = np.cumsum([0] + [len(e["passages"]) for e in exs])
 
 llm, k = CachedLLM(cfg["generate"]), cfg["retrieval"]["k"]
 flags, ems, f1s, lat = [], [], [], []
 for i, e in enumerate(exs):
-    P = pv[i*10:(i+1)*10]
+    P = pv[offs[i]:offs[i+1]]
     t = time.time(); order = rank(qv[i], P); r_lat = time.time() - t
     flags.append([e["passages"][j]["gold"] for j in order])
     pred, g_lat = llm(build_prompt(e["question"], [e["passages"][j] for j in order[:k]]))

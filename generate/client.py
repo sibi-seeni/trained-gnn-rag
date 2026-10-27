@@ -3,6 +3,7 @@ from openai import OpenAI
 
 class CachedLLM:
     def __init__(self, g):
+        os.makedirs(os.path.dirname(g["cache_file"]), exist_ok=True)
         key = open(os.path.expanduser(g["key_file"])).read().strip()
         self.c, self.g = OpenAI(api_key=key, base_url=g["base_url"]), g
         self.cache = {}
