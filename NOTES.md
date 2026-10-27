@@ -13,9 +13,9 @@
 
 ## Data
 - HotpotQA distractor, seed 42: 2000 train / 500 val questions.
-- Gold passages per question (expect 2):
-- Examples with fewer than 10 passages:
-- Bridge vs comparison split in val:
+- Gold passages per question (expect 2): 2
+- Examples with fewer than 10 passages: 7
+- Bridge vs comparison split in val: {'bridge': 413, 'comparison': 87}
 
 ## Baseline: plain dense search (MiniLM, k = 4)
 Command: `python run_pipeline.py configs/baseline_plain.yaml`
@@ -32,10 +32,10 @@ Sanity checks:
 ## Graph stats (val, 500 graphs)
 Command: `python -m graph.run_graphs configs/baseline_plain.yaml [--sim 0.5]`
 
-| edges | avg degree | isolated nodes / graph | gold pair linked | linked (bridge) | linked (comparison) |
-|-------|------------|------------------------|------------------|-----------------|---------------------|
-| entity + title |  |  |  |  |  |
-| + sim > 0.5    |  |  |  |  |  |
+| edges | avg degree | isolated nodes / graph | gold pair linked | linked (bridge) | linked (comparison) | avg edges per graph | 
+|-------|------------|------------------------|------------------|-----------------|---------------------|---------------------|
+| entity + title | 4.433 | 1.732 | 0.82 | 0.927 | 0.310 | 44.27 |
+| + sim > 0.5    | 4.597 | 1.468 | 0.828 | 0.937 | 0.310 | 45.9 |
 
 Takeaway (does the graph connect the second fact often enough for the GNN to help?):
 

@@ -1,0 +1,2 @@
+{"graphs": "val", "n": 500, "avg_degree": 4.433071430817247, "isolated_per_graph": 1.732, "gold_pair_linked": 0.82, "gold_pair_linked_bridge": 0.927360774818402, "gold_pair_linked_comparison": 0.3103448275862069, "avg_edges_per_graph": 44.27}
+{"graphs": "val_sim0.5", "n": 500, "avg_degree": 4.596579366862774, "isolated_per_graph": 1.468, "gold_pair_linked": 0.828, "gold_pair_linked_bridge": 0.937046004842615, "gold_pair_linked_comparison": 0.3103448275862069, "avg_edges_per_graph": 45.9}
