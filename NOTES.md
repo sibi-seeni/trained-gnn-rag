@@ -45,6 +45,39 @@ Takeaway:
 
 ## Open issues / decisions
 - Decision: Week 2 uses the entity + title graph (`graphs_val.pt`).
-- Title edges are one-directional (passage i mentions j's title → i→j only). Make graphs undirected (`torch_geometric.utils.to_undirected`) before message passing, and note that "isolated" above counts out-degree only, so it slightly overstates truly isolated nodes.
-- Comparison questions: consider adding a question node linked to every passage, or report bridge and comparison results separately.
+- Title edges are one-directional (passage i mentions j's title → i→j only). Make graphs undirected (`torch_geometric.utils.to_undirected`) before message passing, and note that "isolated" above counts out-degree only, so it slightly overstates truly isolated nodes. → Done in Week 2: `graph/dataset.py` makes edges undirected at load time (saved graphs unchanged).
+- Comparison questions: consider adding a question node linked to every passage, or report bridge and comparison results separately. → Week 2 reports both splits; question node is `configs/gnn_relevance_qnode.yaml` (optional run).
 - Baseline row pending: NaviGator reset all connections on Oct 26 (from HiPerGator and off-campus). Rerun when it is back; fallback is vLLM on the B200.
+
+## Week 2: relevance-only model
+Runbook: `WEEK2.md`. Command: `bash scripts/week2.sh` (or `sbatch slurm/week2.sbatch`).
+- Date of run:              Git commit (`git rev-parse --short HEAD`):
+- Device:                   Train/dev/val: 1800 / 200 / 500 questions
+- hop2 rule counts (val, from `python -m graph.dataset`): title ___, cos ___, none ___
+- Tuning tried on dev (config, dev_hop2@4):
+
+### Results (paste `results/week2/compare.md`)
+
+| method | seeds | hop2@2 | hop2@4 | hop2_mrr | both_gold@2 | both_gold@4 | recall@4 | mrr | hop2@4_bridge | hop2@4_comparison |
+|---|---|---|---|---|---|---|---|---|---|---|
+| plain_search | - | | | | | | | | | |
+| gnn_relevance | 3 | | | | | | | | | |
+| mlp_relevance | 3 | | | | | | | | | |
+
+Paired bootstrap (hop2@4): GNN − plain: ___ [ , ]; MLP − plain: ___ [ , ]; GNN − MLP: ___ [ , ]
+Rescued / lost vs plain (GNN): ___ / ___
+sigma_seed: ___ points (copied into PREREGISTRATION.md)
+
+### Examples
+- 3 second facts the GNN rescued (question, hop2 title, plain rank → GNN rank, why):
+- 3 it lost:
+
+### End-to-end QA (when NaviGator is back; first 100 val)
+| retriever | EM | F1 | both_gold@4 |
+|---|---|---|---|
+| plain | | | |
+| gnn_relevance s0 | | | |
+
+### Takeaway
+-
+

@@ -1,0 +1,5 @@
+# Control: same features, same training, no message passing. Tells you if the graph helps.
+base: configs/gnn_relevance.yaml
+name: mlp_relevance
+model: {layers: 0}
+retrieval: {checkpoint: checkpoints/mlp_relevance_s0.pt}
