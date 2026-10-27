@@ -1,9 +1,10 @@
 # Notes
 
 ## Setup
-- Date of baseline run:
-- Compute: HiPerGator, account/QOS eee6778, node type (B200 / CPU):
+- Date of graph-stats run: Oct 26, 2026. Baseline run: pending (NaviGator down on Oct 26).
+- Compute: HiPerGator, account/QOS eee6778, node type: B200
 - Env: /blue/eee6778/si.seenivasan/conda/envs/gnnrag (versions in requirements.lock.txt)
+- Git commit of the graph-stats run: e917b05
 - Git commit of the baseline run (`git rev-parse --short HEAD`):
 
 ## Reader model
@@ -13,9 +14,9 @@
 
 ## Data
 - HotpotQA distractor, seed 42: 2000 train / 500 val questions.
-- Gold passages per question (expect 2): 2
-- Examples with fewer than 10 passages: 7
-- Bridge vs comparison split in val: {'bridge': 413, 'comparison': 87}
+- Gold passages per question: 2 for every question.
+- Examples with fewer than 10 passages: 7 (handled with offsets, not i*10).
+- Question types in val: 413 bridge (83%), 87 comparison (17%).
 
 ## Baseline: plain dense search (MiniLM, k = 4)
 Command: `python run_pipeline.py configs/baseline_plain.yaml`
@@ -32,12 +33,18 @@ Sanity checks:
 ## Graph stats (val, 500 graphs)
 Command: `python -m graph.run_graphs configs/baseline_plain.yaml [--sim 0.5]`
 
-| edges | avg degree | isolated nodes / graph | gold pair linked | linked (bridge) | linked (comparison) | avg edges per graph | 
+| edges | avg degree | isolated nodes / graph | gold pair linked | linked (bridge) | linked (comparison) | avg edges per graph |
 |-------|------------|------------------------|------------------|-----------------|---------------------|---------------------|
-| entity + title | 4.433 | 1.732 | 0.82 | 0.927 | 0.310 | 44.27 |
-| + sim > 0.5    | 4.597 | 1.468 | 0.828 | 0.937 | 0.310 | 45.9 |
+| entity + title | 4.43 | 1.73 | 0.820 | 0.927 | 0.310 | 44.3 |
+| + sim > 0.5    | 4.60 | 1.47 | 0.828 | 0.937 | 0.310 | 45.9 |
 
-Takeaway (does the graph connect the second fact often enough for the GNN to help?):
+Takeaway:
+- Bridge questions (83% of val) have the two gold passages directly linked 93% of the time, so the graph gives the GNN a path from the first fact to the second. This is the case the project is about.
+- Comparison questions are linked only 31% of the time. That is expected: their two golds are about two separate entities (e.g. "who was born first, A or B?") that don't mention each other. The question connects them, not the passages.
+- Similarity edges at 0.5 add about 1.6 edges per graph and +1 point on bridge linking. Not worth it: use entity + title edges as the main graph.
 
 ## Open issues / decisions
-- 
+- Decision: Week 2 uses the entity + title graph (`graphs_val.pt`).
+- Title edges are one-directional (passage i mentions j's title → i→j only). Make graphs undirected (`torch_geometric.utils.to_undirected`) before message passing, and note that "isolated" above counts out-degree only, so it slightly overstates truly isolated nodes.
+- Comparison questions: consider adding a question node linked to every passage, or report bridge and comparison results separately.
+- Baseline row pending: NaviGator reset all connections on Oct 26 (from HiPerGator and off-campus). Rerun when it is back; fallback is vLLM on the B200.
