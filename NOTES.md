@@ -1,16 +1,16 @@
 # Notes
 
 ## Setup
-- Date of graph-stats run: Oct 26, 2026. Baseline run: pending (NaviGator down on Oct 26).
+- Date of graph-stats run: Oct 26, 2026. Baseline run: Oct 27, 2026.
 - Compute: HiPerGator, account/QOS eee6778, node type: B200
 - Env: /blue/eee6778/si.seenivasan/conda/envs/gnnrag (versions in requirements.lock.txt)
 - Git commit of the graph-stats run: e917b05
-- Git commit of the baseline run (`git rev-parse --short HEAD`):
+- Git commit of the baseline run: d3d9dba
 
 ## Reader model
 - Llama 3.2 3B not available on NaviGator (checked Oct 20, 2026).
 - Main reader: granite-3.3-8b-instruct, temperature 0, max_tokens 64.
-- Strong-reader check (later): llama-3.3-70b-instruct.
+- Strong-reader check (later): llama-3.3-70b-instruct and/or gemma-4-31b-it.
 
 ## Data
 - HotpotQA distractor, seed 42: 2000 train / 500 val questions.
@@ -29,9 +29,6 @@ Command: `python run_pipeline.py configs/baseline_plain.yaml`
 Sanity checks:
 - Raw reader outputs short? (look at cache/llm.jsonl): Yes, 1-3 words.
 - 3 example failures (question, gold answer, prediction, were both golds retrieved?):
-{"k": "a30db64031ff384568bcd5a71cc8c244ba914d7f", "v": "Yes"}
-{"k": "77ef737ba7514e72158db04c4a5c1e19bb0ad730", "v": "Rodr\u00edguez v. Popular Democratic Party"}
-{"k": "2f558063eee1374214ee1c9379763390d868f660", "v": "1970s"}
 
 ## Graph stats (val, 500 graphs)
 Command: `python -m graph.run_graphs configs/baseline_plain.yaml [--sim 0.5]`
@@ -50,4 +47,3 @@ Takeaway:
 - Decision: Week 2 uses the entity + title graph (`graphs_val.pt`).
 - Title edges are one-directional (passage i mentions j's title → i→j only). Make graphs undirected (`torch_geometric.utils.to_undirected`) before message passing, and note that "isolated" above counts out-degree only, so it slightly overstates truly isolated nodes.
 - Comparison questions: consider adding a question node linked to every passage, or report bridge and comparison results separately.
-- Baseline row pending: NaviGator reset all connections on Oct 26 (from HiPerGator and off-campus). Rerun when it is back; fallback is vLLM on the B200.
