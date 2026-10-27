@@ -1,1 +1,2 @@
 {"method": "plain_search", "EM": 0.43, "F1": 0.5902865903704139, "recall@2": 0.615, "both_gold@2": 0.31, "recall@4": 0.775, "both_gold@4": 0.56, "recall@10": 1.0, "both_gold@10": 1.0, "mrr": 0.897, "latency_s": 0.27661545991897585}
+{"method": "plain_search", "EM": 0.398, "F1": 0.5543454485651488, "recall@2": 0.621, "both_gold@2": 0.316, "recall@4": 0.784, "both_gold@4": 0.596, "recall@10": 1.0, "both_gold@10": 1.0, "mrr": 0.9000071428571427, "latency_s": 0.6116092653274536}

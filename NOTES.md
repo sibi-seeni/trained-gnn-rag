@@ -24,7 +24,7 @@ Command: `python run_pipeline.py configs/baseline_plain.yaml`
 | n_q | EM | F1 | recall@2 | recall@4 | recall@10 | both_gold@2 | both_gold@4 | both_gold@10 | MRR | latency (ms, first run) |
 |-----|----|----|----------|----------|-----------|-------------|-------------|--------------|-----|-------------------------|
 | 100 |  0.43  |  0.590  |     0.615     |     0.775     |     1.0      |       0.31      |       0.56      |       1.0      |  0.897   |           276.615             |
-| 500 |    |    |          |          |           |             |             |     |                        |
+| 500 |  0.398  |  0.554  |     0.621     |     0.784     |     1.0      |       0.316      |       0.596      |       1.0        |  0.900   |           611.609             |
 
 Sanity checks:
 - Raw reader outputs short? (look at cache/llm.jsonl): Yes, 1-3 words.
