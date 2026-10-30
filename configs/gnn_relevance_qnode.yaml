@@ -1,0 +1,5 @@
+# Optional variant: add a question node linked to every passage (aimed at comparison questions).
+base: configs/gnn_relevance.yaml
+name: gnn_relevance_qnode
+graph: {question_node: true, edge_cols: [0, 1, 5]}
+retrieval: {checkpoint: checkpoints/gnn_relevance_qnode_s0.pt}

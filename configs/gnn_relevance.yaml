@@ -1,0 +1,23 @@
+# Week 2: relevance-only GATv2 ranker. Inherits data/embed/generate from the Week 1 baseline.
+base: configs/baseline_plain.yaml
+name: gnn_relevance
+
+graph:
+  file: "graphs_{split}.pt"   # entity + title graph (Week 1 decision), built per split
+  question_node: false
+  edge_cols: [0, 1]           # shared_entity, title. Week 3 adds 3,4 (agree, contradict)
+
+model: {hidden: 256, layers: 2, heads: 4, dropout: 0.2, attn_dropout: 0.1}
+
+train:
+  epochs: 80
+  batch_size: 64
+  lr: 0.001
+  weight_decay: 0.0001
+  loss: listwise              # softmax over each question's passages; or "bce"
+  bce_weight: 0.0             # >0 adds a BCE term on top of listwise
+  patience: 12
+  dev_frac: 0.1               # 200 of the 2000 train questions, fixed by seed 42
+  select: hop2@4              # dev metric for early stopping / checkpoint choice
+
+retrieval: {method: gnn, k: 4, ks: [2, 4, 10], checkpoint: checkpoints/gnn_relevance_s0.pt}
