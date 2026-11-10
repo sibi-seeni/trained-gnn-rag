@@ -1,0 +1,6 @@
+# Exploratory control (not part of the pre-registered decision): relevance-only GATv2 with C's features and C's
+# training data (clean + attacked, fakes as negatives), no trust. Tells whether C's gain comes from the gating or
+# just from having seen fakes during training.
+base: configs/trust_stage.yaml
+name: gnn_relevance_adv
+model: {kind: relevance_adv}

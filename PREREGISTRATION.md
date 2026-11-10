@@ -78,3 +78,27 @@ pass and uses the same rule, so it shows early which way things are going but do
 - Oct 2026: first version, written before any trust numbers.
 - Nov 10, 2026: project reopened. Filled in section 4 (sigma_seed = 0.61, so Δ = 3.0) and froze the rule. No other
   change to sections 1-6. No trust or attack code exists at this commit.
+- Nov 10, 2026 (before any trust or attack numbers; code in the same commit): how the open details are filled in.
+  Nothing in sections 1-6 changes; this only pins down what they left open.
+  - **Attack set (`edit`, the pre-registered one)**: `attacks/plant.py`. 3 fakes per question, each a copy of a gold
+    passage (hop2, hop1, hop2 again) with 1-2 entities swapped for same-type entities from other questions (the answer
+    first if the passage contains it; never the article's own subject). Title kept. Val fakes use seed 7, train fakes
+    seed 8. Fakes are ordinary scorable nodes, so top 4 is over all 13 passages.
+  - **Features**: Week 2 node features. A keeps edge cols 0-1 (it is the Week 2 model, retrained with the same code).
+    The trust stage and C add col 3 agree and col 4 contradict (definitions in `attacks/plant.py`).
+  - **Trust stage (B)**: a GATv2 the same size as A, trained with BCE (real vs planted) on the 1800 fit questions clean
+    + the same 1800 with `edit` fakes; checkpoint chosen on dev fake-detection AUC (dev = the Week 2 dev split, clean +
+    attacked). λ grid {0, .25, .5, 1, 2, 4, 8, 16, 32, 64}, chosen per seed on mean(dev clean hop2@4, dev attacked
+    hop2@4), ties to the smaller λ.
+  - **C**: before each GATv2 layer a gate reads the node states and gives trust t_j; every message node j sends is
+    multiplied by t_j. Relevance head (the ranking score) and trust head on [h_L, h_0]. Loss = listwise + 1.0 × BCE on
+    the trust head and the gates. Same training data as the trust stage; checkpoint chosen on the same dev criterion as
+    λ. No other tuning for any version.
+  - **Guardrail 4** reads as |clean hop2@4 of C − clean hop2@4 of A| ≤ 2 points.
+  - **Week 5 harder attacks**: `connected` (sentences shuffled + a "See also" sentence naming 3 other passages, so the
+    fake is well connected) and `connected_q` (same + the question prepended). Neither is seen in training. Judged with
+    the same rule. The decision of record is the rule on `edit` with the final code; the harder attacks are reported
+    next to it, and don't override it.
+  - **Exploratory rows** (reported, not part of the decision): A_adv (A's architecture with C's features and training
+    data, no trust), B_adv (A_adv + trust stage at ranking), C_rank (C + its own trust head at ranking).
+

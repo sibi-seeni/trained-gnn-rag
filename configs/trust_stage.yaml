@@ -1,0 +1,7 @@
+# Week 3, version B's trust stage: same backbone as gnn_relevance, trained with BCE to tell real from planted.
+# Its output enters only at final ranking: final = relevance_A - lambda * (1 - trust)  (eval/week3.py).
+base: configs/gnn_relevance.yaml
+name: trust_stage
+graph: {edge_cols: [0, 1, 3, 4]}   # shared_entity, title, agree, contradict
+model: {kind: trust_stage}
+attack: {train: edit}             # train fakes (seed 8); the val fakes (seed 7) are never seen in training
