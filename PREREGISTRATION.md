@@ -1,8 +1,8 @@
 # Pre-registration: the make-or-break test
 
-> **Status: planned, not carried out.** The project was stopped after Week 2 (Oct 2026), before any trust or
-> attack code existed. Section 4 was never filled in and the rule below was never frozen or applied, so there are
-> no results for this test. (Week 2 measured a seed std of at most 0.61 points on hop2@4; see NOTES.md.)
+> **Status: frozen Nov 10, 2026** (project reopened after the Oct close-out). Section 4 is filled in from the
+> Week 2 run and this commit freezes the rule before any trust or attack code or numbers exist. Implementation
+> details that the plan left open are logged in section 7 before the first val run.
 
 Written in Week 2 (Oct 26 – Nov 1, 2026), **before any trust or attack numbers exist**.
 The git commit that adds this file is the timestamp. If anything below changes later, don't
@@ -44,7 +44,9 @@ Seeds: 0, 1, 2 for every version (three runs each).
 `sigma_seed` = largest standard deviation of hop2@4 across seeds 0–2 among the Week 2 trained models
 (printed by `python -m eval.compare_week2`).
 
-- sigma_seed = ______ points   (from commit ______ , date ______)
+- sigma_seed = **0.61** points (mlp_relevance; gnn_relevance was 0.50), from the Week 2 run at code commit cec4722,
+  results committed in 279ee90, Oct 30, 2026 (`results/week2/summary.json`, `sigma_seed_hop2@4`).
+- So Δ = max(3.0, 2 × 0.61) = **3.0 points**.
 
 ## 5. The "clearly better" rule
 
@@ -74,3 +76,5 @@ pass and uses the same rule, so it shows early which way things are going but do
 ## 7. Change log
 
 - Oct 2026: first version, written before any trust numbers.
+- Nov 10, 2026: project reopened. Filled in section 4 (sigma_seed = 0.61, so Δ = 3.0) and froze the rule. No other
+  change to sections 1-6. No trust or attack code exists at this commit.
