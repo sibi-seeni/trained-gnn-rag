@@ -199,6 +199,18 @@ def main():
 
     # exploratory: same arithmetic for other pairs, clearly not the decision
     if lambdas["B_adv"]:
+        lines.append("\n### Exploratory: the same rule with B_adv in B's place (B's relevance part trained on C's data)\n")
+        lines.append("| attack | C − B_adv (mean) | per seed B_adv / C | bootstrap 95% CI | poison@4 B_adv / C | "
+                     "1 size | 2 every seed | 3 CI > 0 | 4 guardrails | outcome |")
+        lines.append("|" + "---|" * 10)
+        summary["rule_vs_B_adv"] = {}
+        for st in a.attacks:
+            r = rule(st, b="B_adv"); summary["rule_vs_B_adv"][st] = r
+            ps = ", ".join(f"{r['per_seed_B'][s]:.1f}/{r['per_seed_C'][s]:.1f}" for s in SEEDS)
+            ok = lambda k: "yes" if r["conditions"][k] else "no"
+            lines.append(f"| {st} | {r['C_minus_B']:+.1f} | {ps} | [{r['bootstrap'][1]:+.1f}, {r['bootstrap'][2]:+.1f}] | "
+                         f"{r['poison_B']:.1f} / {r['poison_C']:.1f} | {ok('1_size')} | {ok('2_every_seed')} | "
+                         f"{ok('3_bootstrap')} | {ok('4_guardrails')} | {r['outcome']} |")
         lines.append("\n### Exploratory pairs (same arithmetic, not part of the decision)\n")
         lines.append("| attack | pair | diff (mean) | bootstrap 95% CI | every seed |")
         lines.append("|---|---|---|---|---|")

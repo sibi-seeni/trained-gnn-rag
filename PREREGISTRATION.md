@@ -1,8 +1,11 @@
 # Pre-registration: the make-or-break test
 
-> **Status: frozen Nov 10, 2026** (project reopened after the Oct close-out). Section 4 is filled in from the
-> Week 2 run and this commit freezes the rule before any trust or attack code or numbers exist. Implementation
-> details that the plan left open are logged in section 7 before the first val run.
+> **Status: frozen Nov 10, 2026, then carried out the same day.** Rule frozen in commit 52d3dc8, open details logged
+> in section 7 with the code in 26e1d8b, both before any trust numbers. **Outcome on the pre-registered `edit` attack:
+> PASS** (C − B = +12.2 points, CI [+9.3, +15.2]), and PASS on both Week 5 attacks. But an exploratory control shows
+> the B/C contrast as written here is confounded (B's relevance model never saw fakes, C's did): against B_adv, which
+> fixes that, C ties on `edit` and is ~5 points better only on the unseen harder attacks. See NOTES.md, Weeks 3-5.
+> Sections 1-6 are left exactly as frozen.
 
 Written in Week 2 (Oct 26 – Nov 1, 2026), **before any trust or attack numbers exist**.
 The git commit that adds this file is the timestamp. If anything below changes later, don't
