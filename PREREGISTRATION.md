@@ -1,7 +1,7 @@
 # Pre-registration: the make-or-break test
 
-> **Status: frozen Nov 10, 2026, then carried out the same day.** Rule frozen in commit 52d3dc8, open details logged
-> in section 7 with the code in 26e1d8b, both before any trust numbers. **Outcome on the pre-registered `edit` attack:
+> **Status: frozen Nov 10, 2026, then carried out the same day.** Rule frozen in commit 2a0b180, open details logged
+> in section 7 with the code in dee16b7, both before any trust numbers. **Outcome on the pre-registered `edit` attack:
 > PASS** (C − B = +12.2 points, CI [+9.3, +15.2]), and PASS on both Week 5 attacks. But an exploratory control shows
 > the B/C contrast as written here is confounded (B's relevance model never saw fakes, C's did): against B_adv, which
 > fixes that, C ties on `edit` and is ~5 points better only on the unseen harder attacks. See NOTES.md, Weeks 3-5.

@@ -33,7 +33,7 @@ from model.trust import load
 SEEDS = [0, 1, 2]
 LAMBDAS = [0, 0.25, 0.5, 1, 2, 4, 8, 16, 32, 64]
 COLS = ["hop2@4", "poison@4", "hop2@2", "both_gold@4", "recall@4", "hop2@4_bridge", "hop2@4_comparison"]
-SIGMA_SEED, FLOOR = 0.61, 3.0       # PREREGISTRATION.md section 4 (frozen in commit 52d3dc8)
+SIGMA_SEED, FLOOR = 0.61, 3.0       # PREREGISTRATION.md section 4 (frozen in commit 2a0b180)
 DELTA = max(FLOOR, 2 * SIGMA_SEED)
 DECISION = ["A", "B", "C"]
 EXPLORE = ["A_adv", "B_adv", "C_rank"]

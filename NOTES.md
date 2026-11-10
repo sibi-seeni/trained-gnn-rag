@@ -87,8 +87,8 @@ The project stopped after Week 2; the trust and attack work (Weeks 3-5) was neve
 Next step would have been Week 3: plant fake passages into the val graphs and test whether trust inside message passing protects hop2@4 better than trust applied only at final ranking (`PREREGISTRATION.md`, never carried out).
 
 ## Weeks 3-5: trust in message passing (C) vs trust at final ranking (B)
-Project reopened Nov 10, 2026. Pre-registration frozen first (commit 52d3dc8: sigma_seed = 0.61, so Δ = 3.0 points),
-then the open design details logged in its change log together with the code (commit 26e1d8b), then the runs.
+Project reopened Nov 10, 2026. Pre-registration frozen first (commit 2a0b180: sigma_seed = 0.61, so Δ = 3.0 points),
+then the open design details logged in its change log together with the code (commit dee16b7), then the runs.
 - Device: CPU, 4 cores, cloud container (same setup as Week 2: Python 3.11, CPU torch 2.11, PyG 2.8.1). Each Week 3
   training run took 1.5-3 min. Data and graphs rebuilt from scratch; `attacks.plant --check` confirms the new builder
   gives exactly the Week 1 edges (cols 0-1) on all 2000 train and 500 val graphs.
