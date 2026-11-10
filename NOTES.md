@@ -78,10 +78,100 @@ Caveat: when neither gold names the other (the "cos" rule, 210 of 500 val questi
 - Overall MRR doesn't improve (90.0 vs 89.3): plain search already puts one gold first most of the time. The GNN's gain is in pulling up the *second* passage.
 - Limits: one dataset, 500 val questions, MiniLM features, no tuning, retrieval only (no reader EM/F1 with the GNN).
 
-## Conclusion (project closed, Oct 30, 2026)
+## Conclusion of Week 2 (written at the Oct 30 close-out; superseded by Weeks 3-5 below)
 The project stopped after Week 2; the trust and attack work (Weeks 3-5) was never started. What it showed:
 1. Plain dense search usually finds one gold passage but often misses the pair: recall@4 is 0.78, but both golds are in the top 4 only about 60% of the time. That gap is the multi-hop problem.
 2. Simple entity + title edges directly link the two gold passages in 93% of bridge questions (31% for comparison), so the graph carries a path from the first fact to the second. Similarity edges add almost nothing.
 3. A relevance-only GATv2 ranker over that graph uses the path: second-fact recall@4 goes from 63% (plain search) to 84%, about 10 points above an MLP trained the same way without message passing, with nearly all of the gain on bridge questions.
 
 Next step would have been Week 3: plant fake passages into the val graphs and test whether trust inside message passing protects hop2@4 better than trust applied only at final ranking (`PREREGISTRATION.md`, never carried out).
+
+## Weeks 3-5: trust in message passing (C) vs trust at final ranking (B)
+Project reopened Nov 10, 2026. Pre-registration frozen first (commit 2a0b180: sigma_seed = 0.61, so Δ = 3.0 points),
+then the open design details logged in its change log together with the code (commit dee16b7), then the runs.
+- Device: CPU, 4 cores, cloud container (same setup as Week 2: Python 3.11, CPU torch 2.11, PyG 2.8.1). Each Week 3
+  training run took 1.5-3 min. Data and graphs rebuilt from scratch; `attacks.plant --check` confirms the new builder
+  gives exactly the Week 1 edges (cols 0-1) on all 2000 train and 500 val graphs.
+- Version A = the Week 2 GATv2, retrained with the Week 2 code: preds and logs for seeds 0-2 came out byte-identical to
+  the committed Week 2 files, so A is exactly the Week 2 model.
+- Commands: `bash scripts/week3.sh` (or `sbatch slurm/week3.sbatch`), then `python -m eval.week3`. Full output in
+  `results/week3/compare.md`, numbers in `results/week3/summary.json`, per-question rankings in `results/week3/preds/`.
+- md5 of the val attack files (first 12 chars), to check a rebuild on HPG gives the same fakes:
+  val_none 2786a3c010d8, val_edit c752a5cc1a92, val_connected 87c5a9e726d6, val_connected_q 3f2dd9806285.
+
+### Setup in short
+- **Attacks** (`attacks/plant.py`): 3 fakes per question, each a copy of a gold passage (hop2, hop1, hop2) with 1-2
+  entities swapped for same-type entities from other questions; title kept. `edit` is the pre-registered set.
+  Week 5: `connected` (sentences shuffled + "See also: <3 other titles>", so it links into the graph) and
+  `connected_q` (+ the question prepended, PoisonedRAG-style). Trust stage and C are trained on `edit` fakes only
+  (train fakes seed 8, val fakes seed 7), so the Week 5 attacks are unseen.
+- **New edge features**: agree / contradict. Contradict fires between near copies (same title or word Jaccard ≥ 0.5)
+  whose entities differ. Clean graphs have 0.47 such pairs per question too (real look-alikes, e.g. two moth species
+  pages, or "season 2" vs "season 3"), so it is not a free label.
+- **B** = A − λ·(1 − trust_stage); λ per seed from dev: 1, 0.5, 1. **C** = trust-gated GATv2 (each message scaled by
+  the sender's trust), relevance + trust heads, trained on clean + attacked train.
+- Dev numbers (best epoch): trust stage AUC 0.98 / 0.98 / 0.97; C dev hop2@4 clean/attacked 0.885/0.92, 0.865/0.895,
+  0.865/0.885 (seed 2 early-stopped at epoch 12, the others at 30-35).
+
+### Results (val, 500 questions, hop2@4 in points, mean ± std over seeds 0-2)
+
+| method | clean | edit | connected | connected_q | poison@4 (edit) |
+|---|---|---|---|---|---|
+| plain_search | 63.2 | 42.4 | 20.2 | 8.2 | 94.0 |
+| A relevance only | 84.5 ± 0.5 | 65.9 ± 1.3 | 50.4 ± 1.6 | 34.1 ± 1.0 | 95.1 |
+| B trust at ranking | 84.7 ± 0.6 | 69.6 ± 1.2 | 55.9 ± 1.7 | 36.7 ± 0.5 | 89.1 |
+| C trust in message passing | 84.1 ± 1.0 | 81.8 ± 2.1 | 73.2 ± 4.3 | 49.1 ± 8.1 | 90.0 |
+| *exploratory* | | | | | |
+| A_adv (A trained on C's data, no trust) | 83.3 ± 1.7 | 81.8 ± 0.5 | 68.1 ± 0.6 | 43.3 ± 1.2 | 88.4 |
+| B_adv (A_adv + trust at ranking) | 83.4 ± 1.7 | 81.7 ± 0.6 | 68.3 ± 0.3 | 43.2 ± 1.1 | 85.8 |
+| C_rank (C + its own trust at ranking) | 84.2 ± 1.1 | 81.8 ± 2.1 | 73.0 ± 4.6 | 49.2 ± 7.9 | 89.8 |
+
+Trust AUC on val nodes (real vs planted): trust stage 95.9 / 95.9 / 90.0, C's trust head 89.3 / 90.8 / 86.6
+(edit / connected / connected_q).
+
+**Pre-registered rule, C vs B** (Δ = 3.0):
+
+| attack | C − B | every seed | bootstrap 95% CI | poison@4 B / C | clean A / C | outcome |
+|---|---|---|---|---|---|---|
+| edit (decision of record) | +12.2 | yes | [+9.3, +15.2] | 89.1 / 90.0 | 84.5 / 84.1 | **PASS** |
+| connected | +17.3 | yes | [+14.5, +20.1] | 87.9 / 86.8 | 84.5 / 84.1 | PASS |
+| connected_q | +12.4 | yes | [+9.5, +15.4] | 96.7 / 97.9 | 84.5 / 84.1 | PASS |
+
+**Same rule, C vs B_adv** (exploratory, not the decision):
+
+| attack | C − B_adv | every seed | bootstrap 95% CI | outcome |
+|---|---|---|---|---|
+| edit | +0.1 | no | [−2.1, +2.2] | WEAK (C ≈ B_adv) |
+| connected | +4.9 | yes | [+2.7, +7.1] | PASS |
+| connected_q | +5.9 | no (seed 2: 44.0 vs 40.8) | [+3.4, +8.3] | WEAK |
+
+### Takeaway
+- By the letter of the pre-registration, **C passes**: on the pre-registered `edit` attack it keeps the second fact in
+  the top 4 for 81.8% of questions vs 69.6% for B, every seed, CI well above 0, guardrails fine. Same on both harder attacks.
+- **But the comparison as pre-registered is confounded, and most of the gap isn't the gating.** B's relevance part is
+  the Week 2 model, which never saw a fake; C's relevance head is trained with fakes as negatives. A_adv (same as A
+  but trained on C's data, no trust at all) gets 81.8 on `edit`, exactly C's number. So on the attack it was trained
+  for, all of C's gain over B comes from adversarial training data, not from putting trust inside message passing.
+  This should have been caught when writing the pre-registration; it wasn't, and the rule is left as written.
+- **Where the gating does add something is on the unseen, harder attacks**: C beats A_adv / B_adv by about 5 points
+  on `connected` (every seed, CI [+2.7, +7.1]) and `connected_q` (CI [+3.4, +8.3], but not every seed). Under the
+  same rule with B_adv in B's place: PASS on `connected`, WEAK on `connected_q`, WEAK (a tie) on `edit`. That is the
+  honest version of the result: trust in message passing helps generalise to fakes that are wired into the graph,
+  not on the fakes it was trained on.
+- **Trust at final ranking barely matters once relevance is trained on fakes**: λ for B_adv came out 0, 0, 2 and
+  B_adv ≈ A_adv everywhere. C_rank ≈ C as well. For A (never saw fakes) the trust stage is worth +3.7 points on `edit`.
+- **Nobody keeps fakes out of the top 4**: poison@4 stays 85-98% for every method. A near-copy of a gold passage is,
+  by relevance, as good as the gold, and with 3 fakes per question at least one gets in. The models protect the real
+  second fact (hop2@4) but still hand the reader a fake. Whether that changes the answer is the Week 4 QA question.
+- C is noisier across seeds (std up to 8 points on `connected_q` vs ~1 for the others), mostly seed 2 stopping early.
+  Δ was set from Week 2's seed noise (0.61), which turns out to be much smaller than C's.
+- Limits: one dataset, 500 val questions, CPU runs, programmatic fakes (no LLM-written ones), no tuning, C has 24% more
+  parameters than A/B (1.02M vs 0.83M, the gates and trust head), retrieval only until the Week 4 QA rows exist.
+
+### Week 4: end-to-end QA (needs NaviGator, run on HPG; not done yet)
+```bash
+python -m attacks.plant configs/trust_stage.yaml --split val --attack none
+python -m attacks.plant configs/trust_stage.yaml --split val --attack edit
+python -m generate.qa_week4 --sets none edit --methods plain_search A B C A_adv
+```
+Rows go to `results/week4.jsonl` (EM, F1, fake in context, answer taken from a fake).

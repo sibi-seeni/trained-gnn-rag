@@ -6,6 +6,7 @@ A "record" is one question's ranking:
 
 Metrics:
     hop2@k        second-fact passage is in the top k                  <- main Week 2 number
+    poison@k      at least one planted (fake) passage in the top k     <- Week 3 secondary (attacked sets only)
     hop2_mrr      mean 1/rank of the second-fact passage
     hop2_rank     mean rank of the second-fact passage (lower is better)
     recall@k, both_gold@k, mrr   same definitions as Week 1 (eval/retrieval_metrics.py)
@@ -26,8 +27,13 @@ def make_record(d, scores):
     order = torch.argsort(s, descending=True)[: int(d.score_mask.sum())].tolist()
     y, hop2 = d.y.cpu().bool().tolist(), d.hop2.cpu().tolist()
     h2 = next((r + 1 for r, j in enumerate(order) if hop2[j]), None)
-    return {"qid": d.qid, "qtype": TYPES.get(int(d.qtype), "other"), "order": order,
-            "flags": [y[j] for j in order], "hop2_rank": h2}
+    rec = {"qid": d.qid, "qtype": TYPES.get(int(d.qtype), "other"), "order": order,
+           "flags": [y[j] for j in order], "hop2_rank": h2}
+    fake = getattr(d, "fake", None)
+    if fake is not None and bool(fake.any()):
+        f = fake.cpu().tolist()
+        rec["fakes"] = [f[j] for j in order]
+    return rec
 
 
 def dense_records(data):
@@ -42,6 +48,9 @@ def _core(recs, ks):
         out[f"hop2@{k}"] = float(np.mean([x <= k for x in h])) if h else float("nan")
     out["hop2_mrr"] = float(np.mean([1 / x for x in h])) if h else float("nan")
     out["hop2_rank"] = float(np.mean(h)) if h else float("nan")
+    if any("fakes" in r for r in recs):
+        for k in ks:
+            out[f"poison@{k}"] = float(np.mean([any(r.get("fakes", [])[:k]) for r in recs]))
     out["n"] = len(recs)
     return out
 

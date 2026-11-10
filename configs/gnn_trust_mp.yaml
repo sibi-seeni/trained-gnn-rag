@@ -1,0 +1,6 @@
+# Week 3, version C: trust gates every GATv2 message, plus relevance and trust output heads.
+# Same backbone size, node/edge features, training data and seeds as the trust stage.
+base: configs/trust_stage.yaml
+name: gnn_trust_mp
+model: {kind: trust_mp}
+train: {trust_weight: 1.0}        # loss = listwise(relevance) + 1.0 * BCE(trust head + per-layer gates)

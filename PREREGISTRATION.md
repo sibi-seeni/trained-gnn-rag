@@ -1,8 +1,11 @@
 # Pre-registration: the make-or-break test
 
-> **Status: planned, not carried out.** The project was stopped after Week 2 (Oct 2026), before any trust or
-> attack code existed. Section 4 was never filled in and the rule below was never frozen or applied, so there are
-> no results for this test. (Week 2 measured a seed std of at most 0.61 points on hop2@4; see NOTES.md.)
+> **Status: frozen Nov 10, 2026, then carried out the same day.** Rule frozen in commit 2a0b180, open details logged
+> in section 7 with the code in dee16b7, both before any trust numbers. **Outcome on the pre-registered `edit` attack:
+> PASS** (C − B = +12.2 points, CI [+9.3, +15.2]), and PASS on both Week 5 attacks. But an exploratory control shows
+> the B/C contrast as written here is confounded (B's relevance model never saw fakes, C's did): against B_adv, which
+> fixes that, C ties on `edit` and is ~5 points better only on the unseen harder attacks. See NOTES.md, Weeks 3-5.
+> Sections 1-6 are left exactly as frozen.
 
 Written in Week 2 (Oct 26 – Nov 1, 2026), **before any trust or attack numbers exist**.
 The git commit that adds this file is the timestamp. If anything below changes later, don't
@@ -44,7 +47,9 @@ Seeds: 0, 1, 2 for every version (three runs each).
 `sigma_seed` = largest standard deviation of hop2@4 across seeds 0–2 among the Week 2 trained models
 (printed by `python -m eval.compare_week2`).
 
-- sigma_seed = ______ points   (from commit ______ , date ______)
+- sigma_seed = **0.61** points (mlp_relevance; gnn_relevance was 0.50), from the Week 2 run at code commit cec4722,
+  results committed in 279ee90, Oct 30, 2026 (`results/week2/summary.json`, `sigma_seed_hop2@4`).
+- So Δ = max(3.0, 2 × 0.61) = **3.0 points**.
 
 ## 5. The "clearly better" rule
 
@@ -74,3 +79,29 @@ pass and uses the same rule, so it shows early which way things are going but do
 ## 7. Change log
 
 - Oct 2026: first version, written before any trust numbers.
+- Nov 10, 2026: project reopened. Filled in section 4 (sigma_seed = 0.61, so Δ = 3.0) and froze the rule. No other
+  change to sections 1-6. No trust or attack code exists at this commit.
+- Nov 10, 2026 (before any trust or attack numbers; code in the same commit): how the open details are filled in.
+  Nothing in sections 1-6 changes; this only pins down what they left open.
+  - **Attack set (`edit`, the pre-registered one)**: `attacks/plant.py`. 3 fakes per question, each a copy of a gold
+    passage (hop2, hop1, hop2 again) with 1-2 entities swapped for same-type entities from other questions (the answer
+    first if the passage contains it; never the article's own subject). Title kept. Val fakes use seed 7, train fakes
+    seed 8. Fakes are ordinary scorable nodes, so top 4 is over all 13 passages.
+  - **Features**: Week 2 node features. A keeps edge cols 0-1 (it is the Week 2 model, retrained with the same code).
+    The trust stage and C add col 3 agree and col 4 contradict (definitions in `attacks/plant.py`).
+  - **Trust stage (B)**: a GATv2 the same size as A, trained with BCE (real vs planted) on the 1800 fit questions clean
+    + the same 1800 with `edit` fakes; checkpoint chosen on dev fake-detection AUC (dev = the Week 2 dev split, clean +
+    attacked). λ grid {0, .25, .5, 1, 2, 4, 8, 16, 32, 64}, chosen per seed on mean(dev clean hop2@4, dev attacked
+    hop2@4), ties to the smaller λ.
+  - **C**: before each GATv2 layer a gate reads the node states and gives trust t_j; every message node j sends is
+    multiplied by t_j. Relevance head (the ranking score) and trust head on [h_L, h_0]. Loss = listwise + 1.0 × BCE on
+    the trust head and the gates. Same training data as the trust stage; checkpoint chosen on the same dev criterion as
+    λ. No other tuning for any version.
+  - **Guardrail 4** reads as |clean hop2@4 of C − clean hop2@4 of A| ≤ 2 points.
+  - **Week 5 harder attacks**: `connected` (sentences shuffled + a "See also" sentence naming 3 other passages, so the
+    fake is well connected) and `connected_q` (same + the question prepended). Neither is seen in training. Judged with
+    the same rule. The decision of record is the rule on `edit` with the final code; the harder attacks are reported
+    next to it, and don't override it.
+  - **Exploratory rows** (reported, not part of the decision): A_adv (A's architecture with C's features and training
+    data, no trust), B_adv (A_adv + trust stage at ranking), C_rank (C + its own trust head at ranking).
+

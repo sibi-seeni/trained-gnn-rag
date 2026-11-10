@@ -78,17 +78,29 @@ def prepare_one(g, ex, q_vec, question_node=False, edge_cols=(0, 1)):
     if h2 >= 0:
         hop2[h2] = True
 
+    fake = torch.zeros(len(y), dtype=torch.bool)  # planted passages (Week 3 attacks); scorable like any passage
+    if getattr(g, "fake", None) is not None:
+        fake[:n] = g.fake.bool()
+
     ea = ea[:, list(edge_cols)] if len(edge_cols) else None
-    return Data(x=x, edge_index=ei, edge_attr=ea, y=y, cos=cos, score_mask=score_mask, hop2=hop2,
+    return Data(x=x, edge_index=ei, edge_attr=ea, y=y, cos=cos, score_mask=score_mask, hop2=hop2, fake=fake,
                 qtype=torch.tensor([QTYPE.get(ex["type"], -1)]), hop2_rule=rule, qid=ex["qid"])
 
 
-def load_split(cfg, split):
-    """Load examples + saved graphs for a split and return a list of prepared Data objects."""
+def load_split(cfg, split, attack=None):
+    """Load examples + saved graphs for a split and return a list of prepared Data objects.
+
+    attack=None: the Week 1 graphs (graph.file). attack="none"/"edit"/...: the graphs written by attacks/plant.py
+    (data/processed/{split}_{attack}.jsonl + graphs_{split}_{attack}.pt), which also carry agree/contradict.
+    """
     out_dir, E = cfg["data"]["out_dir"], cfg["embed"]
     G = cfg.get("graph", {})
-    exs = [json.loads(l) for l in open(f"{out_dir}/{split}.jsonl")]
-    graphs = torch.load(f"{out_dir}/" + G.get("file", "graphs_{split}.pt").format(split=split), weights_only=False)
+    if attack is None:
+        exs = [json.loads(l) for l in open(f"{out_dir}/{split}.jsonl")]
+        graphs = torch.load(f"{out_dir}/" + G.get("file", "graphs_{split}.pt").format(split=split), weights_only=False)
+    else:
+        exs = [json.loads(l) for l in open(f"{out_dir}/{split}_{attack}.jsonl")]
+        graphs = torch.load(f"{out_dir}/graphs_{split}_{attack}.pt", weights_only=False)
     assert len(graphs) == len(exs), f"{split}: {len(graphs)} graphs vs {len(exs)} examples"
     qv = encode_cached([e["question"] for e in exs], E["model"], E["cache_dir"], f"q_{split}_all")
     data = []

@@ -2,11 +2,12 @@
 
 Trust-aware graph retrieval for multi-hop QA (HotpotQA). The plan was to retrieve evidence with a GNN (GATv2) over a graph of passages, then add a trust signal inside message passing so poisoned passages get pushed down.
 
-## Project status: closed (Oct 2026)
+## Project status: Weeks 1-5 retrieval done (Nov 2026); Week 4 end-to-end QA pending (needs NaviGator)
 
 - **Done (Week 1):** data pipeline, plain dense-search baseline with an LLM reader, and passage-graph analysis. Tables in `NOTES.md`.
 - **Done (Week 2):** a relevance-only GATv2 ranker plus an MLP control (same features and training, no message passing), seeds 0-2. On 500 val questions, the second gold passage lands in the top 4 for 63% of questions with plain search, 75% with the MLP and 84% with the GNN. Details and caveats in `NOTES.md` (Week 2 and Conclusion).
-- **Not done:** the trust and attack work (Weeks 3-5). `attacks/` is empty and `PREREGISTRATION.md` is a plan that was never carried out. The project was stopped and the effort moved to a related project on prompt-injection-resistant agents.
+- **Done (Weeks 3, 5):** reopened Nov 10. Planted fake passages (3 per question; `edit`, plus harder `connected` / `connected_q`) and ran the pre-registered test. Trust in message passing (C) beats trust at final ranking (B) by 12 points on attacked second-fact recall, so the frozen rule says PASS. An extra control shows the catch: most of that gap comes from C's relevance model being trained on fakes. Against a fair B, C ties on the fakes it was trained on and wins by about 5 points only on the unseen, better-connected fakes. Details in `NOTES.md` (Weeks 3-5).
+- **Not done:** Week 4 end-to-end QA under attack (`generate/qa_week4.py`, needs the NaviGator key on HPG).
 
 Code was run on HiPerGator as Slurm jobs (Week 2 was rerun on CPU, see NOTES). Answer generation goes through UF NaviGator (OpenAI-compatible API).
 
@@ -18,10 +19,10 @@ common/     config loading
 data/       HotpotQA loading + processed splits (processed/ is gitignored)
 graph/      passage graph construction + stats + GNN-ready datasets
 retrieval/  embeddings, dense ranking, trained-ranker wrapper
-model/      GATv2 ranker + training
-attacks/    poisoning (never started)
+model/      GATv2 ranker, trust stage, trust-gated GATv2 + training
+attacks/    planting fake passages (edit / connected / connected_q) + agree/contradict edges
 generate/   NaviGator client + prompt
-eval/       EM/F1, retrieval metrics, second-fact metrics, Week 2 comparison
+eval/       EM/F1, retrieval metrics, second-fact metrics, Week 2 and Week 3/5 comparisons
 scripts/    one script per week of runs
 slurm/      sbatch scripts + env setup
 ```
@@ -59,6 +60,17 @@ python -m eval.compare_week2 configs/gnn_relevance.yaml       # table + bootstra
 ```
 
 Per-run summaries go to `results/week2.jsonl`, per-question val rankings to `results/week2/preds/`, checkpoints to `checkpoints/` (gitignored). The runbook is `WEEK2.md`.
+
+## Weeks 3-5: attacks and trust
+
+```bash
+bash scripts/week3.sh            # plant fakes, train trust stage / C / control on seeds 0-2, run the comparison
+sbatch slurm/week3.sbatch        # same thing as a batch job
+python -m eval.week3             # table + the pre-registered rule, from existing checkpoints
+python -m generate.qa_week4      # Week 4: reader EM/F1 with each retriever, clean and attacked (needs NaviGator)
+```
+
+Outputs: `results/week3/compare.md`, `results/week3/summary.json`, `results/week3/preds/`, `results/week3.jsonl`.
 
 ## Notes
 
