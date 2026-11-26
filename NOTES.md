@@ -209,3 +209,100 @@ would sit).
    points for every method.
 4. Layers 1+2 cost clean hop2@4 more than 2 points for A, B and C (Layer 1 drops real passages).
 5. C without a filter still beats B with the filter on `edit` and `connected` hop2@4.
+
+### Run
+- Date: Nov 26, 2026. Device: CPU, cloud container (Python 3.11, CPU torch 2.11, same package versions as the lock
+  file). Command: `python -m eval.tris_filter` (7 min). Output: `results/tris/compare.md` (all tables, incl. the
+  C = 2/3/5 sweep and bootstrap CIs), `results/tris/summary.json`, `results/tris/removed.jsonl` (what each layer
+  removed, per question).
+- Val sets rebuilt with `attacks/plant.py`; md5s of all four jsonl files match the ones above, so the fake *texts* are
+  exactly the Week 3/5 ones. (But see the reproducibility note below about the fake *embeddings*.)
+
+### What the filter removes (val, % of passages of that kind; hop2 = the second-fact passage)
+
+| set | filter | fakes removed | real removed | hop2 removed | questions with a fake left |
+|---|---|---|---|---|---|
+| clean | L2 | - | 0.1 | 0.0 | - |
+| clean | L1 (C=2) | - | 24.8 | 39.8 | - |
+| clean | L1 (C=3) | - | 13.4 | 21.2 | - |
+| edit | L2 | 0.1 | 0.1 | 0.0 | 100.0 |
+| edit | L1 (C=2) | 55.1 | 26.3 | 61.0 | 80.4 |
+| edit | L1 (C=3) | 32.7 | 15.6 | 34.2 | 79.2 |
+| connected | L2 | 0.1 | 0.1 | 0.0 | 100.0 |
+| connected | L1 (C=2) | 50.6 | 29.0 | 54.8 | 77.2 |
+| connected_q | L2 | 93.4 | 0.1 | 0.0 | 6.6 |
+| connected_q | L1+L2 (C=2) | 96.6 | 32.9 | 46.8 | 4.2 |
+
+C = 5 is close to a no-op (1-4% of anything removed): with 5 clusters over 10-13 passages a cluster rarely holds
+more than half, so Layer 1 falls back to keeping everything.
+
+### Downstream: hop2@4 / poison@4 (mean over seeds 0-2), no filter vs TRIS Layer 2 vs Layers 1+2 (C = 2)
+
+| method | filter | clean | edit | connected | connected_q |
+|---|---|---|---|---|---|
+| B trust at ranking | none | 84.7 | 69.6 / 89.1 | 55.9 / 87.9 | 36.7 / 96.7 |
+| B | L2 | 84.7 | 69.6 / 88.7 | 56.1 / 87.9 | 73.1 / 6.0 |
+| B | L1+L2 | 53.9 | 33.7 / 67.9 | 33.3 / 66.6 | 45.9 / 3.8 |
+| C trust in message passing | none | 84.1 | 81.8 / 90.0 | 73.2 / 86.8 | 49.1 / 97.9 |
+| C | L2 | 84.2 | 81.9 / 89.9 | 73.2 / 86.9 | 82.8 / 6.3 |
+| C | L1+L2 | 53.3 | 36.7 / 69.7 | 39.4 / 67.8 | 49.1 / 4.1 |
+
+A, plain search and the exploratory rows are in `results/tris/compare.md`; they tell the same story (e.g. A + L2 on
+`connected_q`: 34.1 → 78.8). Bootstrap CIs for every filter effect are there too; the L2 effects on `edit` /
+`connected` and on clean are all within ±0.4 points, and the L1+L2 losses on clean are about −31 points (CI ±4).
+
+### Predictions vs outcome
+1. Layer 2 catches question-prefixed fakes only: **held** (93.4% of `connected_q` fakes, 0.1% of the others, 0.1% of
+   real passages).
+2. Layer 1 can't tell our fakes from the gold: **held**. At C = 2 it removes 55% of `edit` fakes but 61% of hop2
+   passages; at C = 3, 33% vs 34%. Every attacked set, every C, within 15 points.
+3. poison@4 on `edit` stays above 80% with Layers 1+2: **did not hold**. It went to 67-73%, because Layer 1 does
+   remove over half the fakes. It does that by throwing away the gold with them (hop2@4 roughly halves), so it is not
+   a win. The `connected_q` half of the prediction held (−93 to −96 points).
+4. Layers 1+2 cost clean hop2@4 more than 2 points: **held**, by a lot: about −31 points for A, B and C.
+5. C with no filter beats B with the filter on `edit` and `connected`: **held** (81.8 vs 33.7 and 73.2 vs 33.3; also
+   vs the kinder B + L2: 69.6 and 56.1).
+
+### Takeaway
+- **Layer 2 is a clean, free question-prefix detector, and that is all it is.** It removes almost every
+  `connected_q` fake and nothing else, real or fake. The 6.6% of `connected_q` fakes it misses are on long questions
+  (median 28 tokens vs 15 for the ones caught): a question longer than the 20-token window can't reach 0.8 overlap.
+  With Layer 2 in front, poison@4 on `connected_q` drops from ~97% to ~6% for every method and hop2@4 jumps (C 49.1 →
+  82.8). On the near-copy attacks it does nothing.
+- **Layer 1 is a bad match for near-copies, and in this setup it hurts even with no attack at all.** With the code's
+  C = 2 it drops a quarter of real passages on clean graphs, and gold passages more often than the rest (38% of gold,
+  40% of hop2 vs 25% of all real), so clean hop2@4 falls from ~84 to ~54 for every model. On attacked sets it
+  removes fakes and second facts at the same rate: a near-copy sits in the same cluster as the passage it was copied
+  from. This is the small-candidate regime TRIS itself reports as unstable (k = 5 in the paper; we have 10-13), and
+  their judge model is our retriever's model, so it isn't an independent view here.
+- **Filters and graph trust fail in different places, so they stack.** On near-copies (`edit`, `connected`) C with no
+  filter beats B with any TRIS setting by 12-48 points. On question-prefixed fakes the filter wins (B + L2 73.1 vs C
+  49.1). C + L2 (84.2 / 81.9 / 73.2 / 82.8) is the best row or within a point of it on every set.
+- **Still nobody keeps near-copies out of the top 4**: poison@4 on `edit` / `connected` stays 87-90% with C + L2.
+  Layer 1 lowers it only by removing the gold too. Layer 3 (an LLM check against the model's own prior) is the only
+  TRIS part that could in principle catch an entity swap; untested, needs NaviGator.
+- For related work: "TRIS filters injected passages after retrieval; its structural layer catches question-trigger
+  fakes almost perfectly, but its clustering layer can't separate entity-swapped near-copies from the gold passages
+  they copy, at our candidate-set size it removes gold at the same rate as fakes, and it costs ~30 points of
+  clean recall. We put trust inside the graph retriever instead, which handles near-copies better, and the two
+  combine." (Check the paper's own wording on payload mimicry before quoting it; only a summary of that section was
+  read.)
+- Limits: Layers 1-2 only, our 13-passage candidate sets (not their k = 50 corpus retrieval), filter applied to the
+  committed rankings rather than retraining or rerunning the GNNs on filtered graphs, programmatic fakes.
+
+### Reproducibility problem found along the way (affects the Weeks 3-5 numbers, not just this side comparison)
+- Plain search recomputed on the rebuilt graphs gives `edit` 41.2 / `connected` 17.8 hop2@4, vs 42.4 / 20.2 in the
+  Weeks 3-5 table; clean matches exactly (63.2).
+- Check: version A seed 0 retrained here reproduces the committed Week 2 preds byte for byte, and its rankings on the
+  rebuilt *clean* val graphs match the committed Week 3 rankings 500 / 500. On the rebuilt *attacked* graphs they match
+  only 34 / 500 (`edit`), 26 / 500 (`connected`), 77 / 500 (`connected_q`); hop2@4 moves 65.2 → 64.4, 48.6 → 47.6,
+  33.2 → 32.0. Float noise doesn't explain that: 1e-6 noise on the fake features leaves 496 / 500 rankings unchanged.
+- So the fake texts are identical (md5) but the fake *node features* in the graphs behind the Weeks 3-5 results were
+  not the embeddings of those texts. Most likely cause: `retrieval/embed.py` keyed its cache on model + tag + number
+  of texts only, so if the fakes were regenerated during development (same 1500 fakes, different wording), the old
+  vectors were silently reused. Can't be confirmed without the original `cache/`. Fixed now: the key includes a hash
+  of the texts (checked: same vectors as a fresh encode).
+- What it means: the Weeks 3-5 graphs (val, and probably the train `edit` fakes that the trust stage, C and A_adv were
+  trained on) should be rebuilt with an empty cache and `scripts/week3.sh` rerun before the numbers go in a paper.
+  The size of the shift on A (about 1 point) suggests the conclusions won't change, but that is a guess until rerun.
+  The TRIS numbers above use the committed rankings, so they are consistent with the Weeks 3-5 table as it stands.

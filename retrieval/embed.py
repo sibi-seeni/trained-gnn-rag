@@ -3,7 +3,10 @@ from sentence_transformers import SentenceTransformer
 
 def encode_cached(texts, model_name, cache_dir, tag, bs=128):
     os.makedirs(cache_dir, exist_ok=True)
-    h = hashlib.md5((model_name + tag + str(len(texts))).encode()).hexdigest()[:10]
+    # key on the texts themselves, not just their count: a count-only key silently reuses stale vectors when the
+    # texts change but their number doesn't (e.g. regenerated fakes; see NOTES.md, TRIS side comparison)
+    content = hashlib.md5("\x1e".join(texts).encode()).hexdigest()
+    h = hashlib.md5((model_name + tag + content).encode()).hexdigest()[:10]
     path = f"{cache_dir}/{tag}_{h}.npy"
     if os.path.exists(path): return np.load(path)
     m = SentenceTransformer(model_name)

@@ -7,6 +7,7 @@ Trust-aware graph retrieval for multi-hop QA (HotpotQA). The plan was to retriev
 - **Done (Week 1):** data pipeline, plain dense-search baseline with an LLM reader, and passage-graph analysis. Tables in `NOTES.md`.
 - **Done (Week 2):** a relevance-only GATv2 ranker plus an MLP control (same features and training, no message passing), seeds 0-2. On 500 val questions, the second gold passage lands in the top 4 for 63% of questions with plain search, 75% with the MLP and 84% with the GNN. Details and caveats in `NOTES.md` (Week 2 and Conclusion).
 - **Done (Weeks 3, 5):** reopened Nov 10. Planted fake passages (3 per question; `edit`, plus harder `connected` / `connected_q`) and ran the pre-registered test. Trust in message passing (C) beats trust at final ranking (B) by 12 points on attacked second-fact recall, so the frozen rule says PASS. An extra control shows the catch: most of that gap comes from C's relevance model being trained on fakes. Against a fair B, C ties on the fakes it was trained on and wins by about 5 points only on the unseen, better-connected fakes. Details in `NOTES.md` (Weeks 3-5).
+- **Side comparison (Nov 26):** TRIS-style filtering (Layers 1-2 of arXiv 2609.00470) on our fakes. Its question-overlap layer removes 93% of `connected_q` fakes and nothing else; its clustering layer can't separate near-copies from gold and costs ~30 points of clean hop2@4. Filter and graph trust stack: C + Layer 2 is best or within a point of best on every set. Also found a stale-embedding-cache bug that means the Weeks 3-5 numbers should be rerun. Details in `NOTES.md` (TRIS side comparison).
 - **Not done:** Week 4 end-to-end QA under attack (`generate/qa_week4.py`, needs the NaviGator key on HPG).
 
 Code was run on HiPerGator as Slurm jobs (Week 2 was rerun on CPU, see NOTES). Answer generation goes through UF NaviGator (OpenAI-compatible API).
@@ -67,10 +68,11 @@ Per-run summaries go to `results/week2.jsonl`, per-question val rankings to `res
 bash scripts/week3.sh            # plant fakes, train trust stage / C / control on seeds 0-2, run the comparison
 sbatch slurm/week3.sbatch        # same thing as a batch job
 python -m eval.week3             # table + the pre-registered rule, from existing checkpoints
+python -m eval.tris_filter       # side comparison: TRIS Layers 1-2 on the val attack sets (CPU, ~7 min)
 python -m generate.qa_week4      # Week 4: reader EM/F1 with each retriever, clean and attacked (needs NaviGator)
 ```
 
-Outputs: `results/week3/compare.md`, `results/week3/summary.json`, `results/week3/preds/`, `results/week3.jsonl`.
+Outputs: `results/tris/` (side comparison), `results/week3/compare.md`, `results/week3/summary.json`, `results/week3/preds/`, `results/week3.jsonl`.
 
 ## Notes
 
