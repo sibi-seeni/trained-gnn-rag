@@ -175,3 +175,37 @@ python -m attacks.plant configs/trust_stage.yaml --split val --attack edit
 python -m generate.qa_week4 --sets none edit --methods plain_search A B C A_adv
 ```
 Rows go to `results/week4.jsonl` (EM, F1, fake in context, answer taken from a fake).
+
+## Side comparison: TRIS-style filtering (Layers 1-2) on our fakes
+Exploratory, not part of the pre-registered decision (which stays as above). Added Nov 26, 2026.
+
+TRIS (Munir et al., "TRIS: A Tri-Layer Retrieval Integrity Sieve Against Knowledge Poisoning", arXiv 2609.00470,
+Aug 2026) is the closest recent filtering defense: it sits after the retriever and drops suspicious passages before
+the reader. Layers 1 and 2 need no LLM, so they can be run here on CPU against our val sets:
+- **Layer 1**: embed the candidates with all-MiniLM-L6-v2, K-Means, keep the majority cluster (only if it holds more
+  than half the candidates, else keep everything).
+- **Layer 2**: drop a passage if its first 20 tokens overlap the question too much (token Jaccard, bigram or trigram
+  overlap ≥ 0.8, or the question's first 12 tokens appear twice).
+- Layer 3 (LLM consistency check, GPT-3.5 in the paper) is not run: it needs NaviGator.
+
+Settings are copied from the released code (github.com/akibjawad14/tris, commit 3a79518, `src/defense.py`), not
+only the paper: the paper text says the default cluster count is 3, but every command in the repo's `experiments.md`
+uses `--cluster_count 2`, so C = 2 is the main setting and C = 3, 5 are a sweep. The filter sees passage text only
+(no title), as in their code. Two things differ from their setup and are part of the point: (1) our retriever is
+already all-MiniLM-L6-v2, so their "independent judge" is the same model as our retriever; (2) the filter sees each
+question's full candidate set (10 real + 3 fakes), close to their k = 10, while they use k = 50 with 5 poisons.
+
+Downstream, the filter is applied to the committed Week 3/5 rankings (`results/week3/preds/`): removed passages are
+dropped from each method's ranking, then hop2@4 / poison@4 are recomputed. If the second-fact passage is removed it
+counts as a miss. The GNNs are not rerun on the filtered graphs (TRIS filters after retrieval, so this is where it
+would sit).
+
+### Predictions (written and committed before running the filter)
+1. Layer 2 removes at least 80% of `connected_q` fakes (they start with the question), close to 0% (< 5%) of `edit`
+   and `connected` fakes, and < 1% of real passages on every set.
+2. Layer 1 cannot tell our fakes from the gold passages they were copied from: on each attacked set the share of fakes
+   it removes is within 15 points of the share of second-fact (hop2) passages it removes.
+3. With Layers 1+2, poison@4 stays above 80% on `edit` for every method; on `connected_q` it drops by at least 30
+   points for every method.
+4. Layers 1+2 cost clean hop2@4 more than 2 points for A, B and C (Layer 1 drops real passages).
+5. C without a filter still beats B with the filter on `edit` and `connected` hop2@4.
