@@ -114,59 +114,86 @@ then the open design details logged in its change log together with the code (co
   0.865/0.885 (seed 2 early-stopped at epoch 12, the others at 30-35).
 
 ### Results (val, 500 questions, hop2@4 in points, mean ± std over seeds 0-2)
+Numbers of record are from the from-scratch rerun of Nov 27, 2026 (see "Rerun" below); the first run's numbers are
+in git at commit d437435 (`results/week3/`) and in the last column of the change table below.
 
 | method | clean | edit | connected | connected_q | poison@4 (edit) |
 |---|---|---|---|---|---|
-| plain_search | 63.2 | 42.4 | 20.2 | 8.2 | 94.0 |
-| A relevance only | 84.5 ± 0.5 | 65.9 ± 1.3 | 50.4 ± 1.6 | 34.1 ± 1.0 | 95.1 |
-| B trust at ranking | 84.7 ± 0.6 | 69.6 ± 1.2 | 55.9 ± 1.7 | 36.7 ± 0.5 | 89.1 |
-| C trust in message passing | 84.1 ± 1.0 | 81.8 ± 2.1 | 73.2 ± 4.3 | 49.1 ± 8.1 | 90.0 |
+| plain_search | 63.2 | 41.2 | 17.8 | 8.2 | 94.2 |
+| A relevance only | 84.5 ± 0.5 | 64.0 ± 0.4 | 48.5 ± 1.0 | 32.7 ± 0.9 | 96.1 |
+| B trust at ranking | 84.7 ± 0.6 | 69.7 ± 1.5 | 55.1 ± 1.8 | 34.6 ± 0.7 | 89.7 |
+| C trust in message passing | 84.1 ± 1.0 | 83.3 ± 1.3 | 70.4 ± 4.7 | 46.9 ± 7.8 | 90.4 |
 | *exploratory* | | | | | |
-| A_adv (A trained on C's data, no trust) | 83.3 ± 1.7 | 81.8 ± 0.5 | 68.1 ± 0.6 | 43.3 ± 1.2 | 88.4 |
-| B_adv (A_adv + trust at ranking) | 83.4 ± 1.7 | 81.7 ± 0.6 | 68.3 ± 0.3 | 43.2 ± 1.1 | 85.8 |
-| C_rank (C + its own trust at ranking) | 84.2 ± 1.1 | 81.8 ± 2.1 | 73.0 ± 4.6 | 49.2 ± 7.9 | 89.8 |
+| A_adv (A trained on C's data, no trust) | 83.3 ± 1.7 | 82.0 ± 0.2 | 65.1 ± 1.9 | 41.2 ± 0.6 | 89.5 |
+| B_adv (A_adv + trust at ranking) | 83.4 ± 1.7 | 81.5 ± 0.9 | 65.3 ± 1.8 | 41.1 ± 0.5 | 86.5 |
+| C_rank (C + its own trust at ranking) | 84.2 ± 1.1 | 83.2 ± 1.3 | 70.5 ± 4.6 | 46.8 ± 8.0 | 90.3 |
 
-Trust AUC on val nodes (real vs planted): trust stage 95.9 / 95.9 / 90.0, C's trust head 89.3 / 90.8 / 86.6
+Trust AUC on val nodes (real vs planted): trust stage 95.8 / 95.3 / 89.3, C's trust head 89.1 / 90.5 / 86.1
 (edit / connected / connected_q).
 
 **Pre-registered rule, C vs B** (Δ = 3.0):
 
 | attack | C − B | every seed | bootstrap 95% CI | poison@4 B / C | clean A / C | outcome |
 |---|---|---|---|---|---|---|
-| edit (decision of record) | +12.2 | yes | [+9.3, +15.2] | 89.1 / 90.0 | 84.5 / 84.1 | **PASS** |
-| connected | +17.3 | yes | [+14.5, +20.1] | 87.9 / 86.8 | 84.5 / 84.1 | PASS |
-| connected_q | +12.4 | yes | [+9.5, +15.4] | 96.7 / 97.9 | 84.5 / 84.1 | PASS |
+| edit (decision of record) | +13.6 | yes | [+10.7, +16.5] | 89.7 / 90.4 | 84.5 / 84.1 | **PASS** |
+| connected | +15.3 | yes | [+12.5, +18.2] | 89.9 / 89.0 | 84.5 / 84.1 | PASS |
+| connected_q | +12.3 | yes | [+9.5, +15.2] | 96.9 / 97.9 | 84.5 / 84.1 | PASS |
 
 **Same rule, C vs B_adv** (exploratory, not the decision):
 
 | attack | C − B_adv | every seed | bootstrap 95% CI | outcome |
 |---|---|---|---|---|
-| edit | +0.1 | no | [−2.1, +2.2] | WEAK (C ≈ B_adv) |
-| connected | +4.9 | yes | [+2.7, +7.1] | PASS |
-| connected_q | +5.9 | no (seed 2: 44.0 vs 40.8) | [+3.4, +8.3] | WEAK |
+| edit | +1.8 | yes | [−0.2, +3.9] | WEAK (below Δ, CI touches 0, poison@4 3.9 points worse) |
+| connected | +5.1 | yes | [+2.8, +7.4] | PASS |
+| connected_q | +5.8 | no (seed 2: 41.6 vs 39.2) | [+3.5, +8.1] | WEAK |
 
 ### Takeaway
 - By the letter of the pre-registration, **C passes**: on the pre-registered `edit` attack it keeps the second fact in
-  the top 4 for 81.8% of questions vs 69.6% for B, every seed, CI well above 0, guardrails fine. Same on both harder attacks.
+  the top 4 for 83.3% of questions vs 69.7% for B, every seed, CI well above 0, guardrails fine. Same on both harder attacks.
 - **But the comparison as pre-registered is confounded, and most of the gap isn't the gating.** B's relevance part is
   the Week 2 model, which never saw a fake; C's relevance head is trained with fakes as negatives. A_adv (same as A
-  but trained on C's data, no trust at all) gets 81.8 on `edit`, exactly C's number. So on the attack it was trained
-  for, all of C's gain over B comes from adversarial training data, not from putting trust inside message passing.
-  This should have been caught when writing the pre-registration; it wasn't, and the rule is left as written.
+  but trained on C's data, no trust at all) gets 82.0 on `edit` vs C's 83.3 (C − A_adv +1.3, CI [−0.7, +3.3]). So on
+  the attack it was trained for, nearly all of C's gain over B comes from adversarial training data, not from putting
+  trust inside message passing. This should have been caught when writing the pre-registration; it wasn't, and the
+  rule is left as written.
 - **Where the gating does add something is on the unseen, harder attacks**: C beats A_adv / B_adv by about 5 points
-  on `connected` (every seed, CI [+2.7, +7.1]) and `connected_q` (CI [+3.4, +8.3], but not every seed). Under the
-  same rule with B_adv in B's place: PASS on `connected`, WEAK on `connected_q`, WEAK (a tie) on `edit`. That is the
+  on `connected` (every seed, CI [+2.8, +7.4]) and `connected_q` (CI [+3.5, +8.1], but not every seed). Under the
+  same rule with B_adv in B's place: PASS on `connected`, WEAK on `connected_q`, WEAK on `edit`. That is the
   honest version of the result: trust in message passing helps generalise to fakes that are wired into the graph,
   not on the fakes it was trained on.
 - **Trust at final ranking barely matters once relevance is trained on fakes**: λ for B_adv came out 0, 0, 2 and
-  B_adv ≈ A_adv everywhere. C_rank ≈ C as well. For A (never saw fakes) the trust stage is worth +3.7 points on `edit`.
-- **Nobody keeps fakes out of the top 4**: poison@4 stays 85-98% for every method. A near-copy of a gold passage is,
+  B_adv ≈ A_adv everywhere. C_rank ≈ C as well. For A (never saw fakes) the trust stage is worth +5.7 points on `edit`
+  (CI [+3.7, +7.7]).
+- **Nobody keeps fakes out of the top 4**: poison@4 stays 86-99% for every method. A near-copy of a gold passage is,
   by relevance, as good as the gold, and with 3 fakes per question at least one gets in. The models protect the real
   second fact (hop2@4) but still hand the reader a fake. Whether that changes the answer is the Week 4 QA question.
 - C is noisier across seeds (std up to 8 points on `connected_q` vs ~1 for the others), mostly seed 2 stopping early.
   Δ was set from Week 2's seed noise (0.61), which turns out to be much smaller than C's.
 - Limits: one dataset, 500 val questions, CPU runs, programmatic fakes (no LLM-written ones), no tuning, C has 24% more
   parameters than A/B (1.02M vs 0.83M, the gates and trust head), retrieval only until the Week 4 QA rows exist.
+
+### Rerun from scratch (Nov 27, 2026)
+Why: while doing the TRIS side comparison (below) it turned out the committed val attack graphs had fake node
+features that were not the embeddings of the committed fake texts (details in "Reproducibility problem" below). After
+fixing the embedding cache key, everything was rebuilt from raw HotpotQA with empty `cache/`, `data/processed/` and
+`checkpoints/`: `load_hotpot` → `run_graphs` (train, val) → `bash scripts/week3.sh` (1 h 45 min, 4 CPU cores, code at
+commit d437435).
+- Reproduces exactly: Week 1 graph stats (train and val rows identical), Week 2 preds and logs for all 3 seeds of A
+  (byte-identical), `--check` on all 2000 + 500 graphs, the four val attack jsonl md5s, every clean-set number, every
+  λ, and the dev numbers of the trust stage, C and A_adv (dev uses the train fakes, so training was not affected).
+- Changes: the attacked val numbers, by up to 3 points:
+
+| method | edit (old → new) | connected | connected_q |
+|---|---|---|---|
+| plain_search | 42.4 → 41.2 | 20.2 → 17.8 | 8.2 → 8.2 |
+| A | 65.9 → 64.0 | 50.4 → 48.5 | 34.1 → 32.7 |
+| B | 69.6 → 69.7 | 55.9 → 55.1 | 36.7 → 34.6 |
+| C | 81.8 → 83.3 | 73.2 → 70.4 | 49.1 → 46.9 |
+| A_adv | 81.8 → 82.0 | 68.1 → 65.1 | 43.3 → 41.2 |
+| B_adv | 81.7 → 81.5 | 68.3 → 65.3 | 43.2 → 41.1 |
+
+- Every decision is the same: pre-registered rule PASS / PASS / PASS (C − B +13.6 / +15.3 / +12.3, was +12.2 / +17.3
+  / +12.4); exploratory C vs B_adv WEAK / PASS / WEAK (C − B_adv +1.8 / +5.1 / +5.8, was +0.1 / +4.9 / +5.9).
 
 ### Week 4: end-to-end QA (needs NaviGator, run on HPG; not done yet)
 ```bash
@@ -217,6 +244,9 @@ would sit).
   removed, per question).
 - Val sets rebuilt with `attacks/plant.py`; md5s of all four jsonl files match the ones above, so the fake *texts* are
   exactly the Week 3/5 ones. (But see the reproducibility note below about the fake *embeddings*.)
+- Rerun Nov 27 on the rankings from the from-scratch Weeks 3-5 rerun; the numbers below are from that run. What the
+  filter removes is unchanged (byte-identical `removed.jsonl`); downstream numbers moved by up to 3 points with the
+  rankings, and every prediction verdict is the same as on the first run.
 
 ### What the filter removes (val, % of passages of that kind; hop2 = the second-fact passage)
 
@@ -240,15 +270,15 @@ more than half, so Layer 1 falls back to keeping everything.
 
 | method | filter | clean | edit | connected | connected_q |
 |---|---|---|---|---|---|
-| B trust at ranking | none | 84.7 | 69.6 / 89.1 | 55.9 / 87.9 | 36.7 / 96.7 |
-| B | L2 | 84.7 | 69.6 / 88.7 | 56.1 / 87.9 | 73.1 / 6.0 |
-| B | L1+L2 | 53.9 | 33.7 / 67.9 | 33.3 / 66.6 | 45.9 / 3.8 |
-| C trust in message passing | none | 84.1 | 81.8 / 90.0 | 73.2 / 86.8 | 49.1 / 97.9 |
-| C | L2 | 84.2 | 81.9 / 89.9 | 73.2 / 86.9 | 82.8 / 6.3 |
-| C | L1+L2 | 53.3 | 36.7 / 69.7 | 39.4 / 67.8 | 49.1 / 4.1 |
+| B trust at ranking | none | 84.7 | 69.7 / 89.7 | 55.1 / 89.9 | 34.6 / 96.9 |
+| B | L2 | 84.7 | 69.7 / 89.3 | 55.1 / 89.8 | 72.7 / 6.2 |
+| B | L1+L2 | 53.9 | 33.7 / 68.4 | 32.2 / 68.1 | 46.0 / 4.1 |
+| C trust in message passing | none | 84.1 | 83.3 / 90.4 | 70.4 / 89.0 | 46.9 / 97.9 |
+| C | L2 | 84.2 | 83.3 / 90.3 | 70.4 / 89.0 | 81.2 / 6.6 |
+| C | L1+L2 | 53.3 | 36.1 / 69.7 | 38.1 / 68.5 | 48.5 / 4.1 |
 
 A, plain search and the exploratory rows are in `results/tris/compare.md`; they tell the same story (e.g. A + L2 on
-`connected_q`: 34.1 → 78.8). Bootstrap CIs for every filter effect are there too; the L2 effects on `edit` /
+`connected_q`: 32.7 → 78.2). Bootstrap CIs for every filter effect are there too; the L2 effects on `edit` /
 `connected` and on clean are all within ±0.4 points, and the L1+L2 losses on clean are about −31 points (CI ±4).
 
 ### Predictions vs outcome
@@ -256,19 +286,19 @@ A, plain search and the exploratory rows are in `results/tris/compare.md`; they 
    real passages).
 2. Layer 1 can't tell our fakes from the gold: **held**. At C = 2 it removes 55% of `edit` fakes but 61% of hop2
    passages; at C = 3, 33% vs 34%. Every attacked set, every C, within 15 points.
-3. poison@4 on `edit` stays above 80% with Layers 1+2: **did not hold**. It went to 67-73%, because Layer 1 does
+3. poison@4 on `edit` stays above 80% with Layers 1+2: **did not hold**. It went to 67-74%, because Layer 1 does
    remove over half the fakes. It does that by throwing away the gold with them (hop2@4 roughly halves), so it is not
    a win. The `connected_q` half of the prediction held (−93 to −96 points).
 4. Layers 1+2 cost clean hop2@4 more than 2 points: **held**, by a lot: about −31 points for A, B and C.
-5. C with no filter beats B with the filter on `edit` and `connected`: **held** (81.8 vs 33.7 and 73.2 vs 33.3; also
-   vs the kinder B + L2: 69.6 and 56.1).
+5. C with no filter beats B with the filter on `edit` and `connected`: **held** (83.3 vs 33.7 and 70.4 vs 32.2; also
+   vs the kinder B + L2: 69.7 and 55.1).
 
 ### Takeaway
 - **Layer 2 is a clean, free question-prefix detector, and that is all it is.** It removes almost every
   `connected_q` fake and nothing else, real or fake. The 6.6% of `connected_q` fakes it misses are on long questions
   (median 28 tokens vs 15 for the ones caught): a question longer than the 20-token window can't reach 0.8 overlap.
-  With Layer 2 in front, poison@4 on `connected_q` drops from ~97% to ~6% for every method and hop2@4 jumps (C 49.1 →
-  82.8). On the near-copy attacks it does nothing.
+  With Layer 2 in front, poison@4 on `connected_q` drops from ~97% to ~6% for every method and hop2@4 jumps (C 46.9 →
+  81.2). On the near-copy attacks it does nothing.
 - **Layer 1 is a bad match for near-copies, and in this setup it hurts even with no attack at all.** With the code's
   C = 2 it drops a quarter of real passages on clean graphs, and gold passages more often than the rest (38% of gold,
   40% of hop2 vs 25% of all real), so clean hop2@4 falls from ~84 to ~54 for every model. On attacked sets it
@@ -276,9 +306,9 @@ A, plain search and the exploratory rows are in `results/tris/compare.md`; they 
   from. This is the small-candidate regime TRIS itself reports as unstable (k = 5 in the paper; we have 10-13), and
   their judge model is our retriever's model, so it isn't an independent view here.
 - **Filters and graph trust fail in different places, so they stack.** On near-copies (`edit`, `connected`) C with no
-  filter beats B with any TRIS setting by 12-48 points. On question-prefixed fakes the filter wins (B + L2 73.1 vs C
-  49.1). C + L2 (84.2 / 81.9 / 73.2 / 82.8) is the best row or within a point of it on every set.
-- **Still nobody keeps near-copies out of the top 4**: poison@4 on `edit` / `connected` stays 87-90% with C + L2.
+  filter beats B with any TRIS setting by 14-50 points. On question-prefixed fakes the filter wins (B + L2 72.7 vs C
+  46.9). C + L2 (84.2 / 83.3 / 70.4 / 81.2) is the best row or within a point of it on every set.
+- **Still nobody keeps near-copies out of the top 4**: poison@4 on `edit` / `connected` stays 89-90% with C + L2.
   Layer 1 lowers it only by removing the gold too. Layer 3 (an LLM check against the model's own prior) is the only
   TRIS part that could in principle catch an entity swap; untested, needs NaviGator.
 - For related work: "TRIS filters injected passages after retrieval; its structural layer catches question-trigger
@@ -288,9 +318,9 @@ A, plain search and the exploratory rows are in `results/tris/compare.md`; they 
   combine." (Check the paper's own wording on payload mimicry before quoting it; only a summary of that section was
   read.)
 - Limits: Layers 1-2 only, our 13-passage candidate sets (not their k = 50 corpus retrieval), filter applied to the
-  committed rankings rather than retraining or rerunning the GNNs on filtered graphs, programmatic fakes.
+  saved rankings rather than retraining or rerunning the GNNs on filtered graphs, programmatic fakes.
 
-### Reproducibility problem found along the way (affects the Weeks 3-5 numbers, not just this side comparison)
+### Reproducibility problem found along the way (affected the Weeks 3-5 numbers; resolved by the Nov 27 rerun)
 - Plain search recomputed on the rebuilt graphs gives `edit` 41.2 / `connected` 17.8 hop2@4, vs 42.4 / 20.2 in the
   Weeks 3-5 table; clean matches exactly (63.2).
 - Check: version A seed 0 retrained here reproduces the committed Week 2 preds byte for byte, and its rankings on the
@@ -302,7 +332,8 @@ A, plain search and the exploratory rows are in `results/tris/compare.md`; they 
   of texts only, so if the fakes were regenerated during development (same 1500 fakes, different wording), the old
   vectors were silently reused. Can't be confirmed without the original `cache/`. Fixed now: the key includes a hash
   of the texts (checked: same vectors as a fresh encode).
-- What it means: the Weeks 3-5 graphs (val, and probably the train `edit` fakes that the trust stage, C and A_adv were
-  trained on) should be rebuilt with an empty cache and `scripts/week3.sh` rerun before the numbers go in a paper.
-  The size of the shift on A (about 1 point) suggests the conclusions won't change, but that is a guess until rerun.
-  The TRIS numbers above use the committed rankings, so they are consistent with the Weeks 3-5 table as it stands.
+- Resolved (Nov 27): everything was rebuilt from scratch with the fixed cache and `scripts/week3.sh` rerun ("Rerun
+  from scratch" under Weeks 3-5). The new plain-search numbers equal the rebuilt ones above (41.2 / 17.8), the dev
+  numbers are identical to the first run (so only the val attack graphs were affected, not training), attacked val
+  numbers moved by up to 3 points, and every pre-registered and exploratory outcome is unchanged. The Weeks 3-5 tables
+  and the TRIS tables above are now the rerun numbers.
